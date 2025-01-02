@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cryptocurrency Analysis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Cryptocurrency Analysis for {{ crypto['name'] }}</h1>
+        {% if error %}
+            <p style="color:red;">{{ error }}</p>
+        {% else %}
+        <div class="crypto-info">
+            <h2><i class="fas fa-chart-area"></i> Market Data</h2>
+            <ul>
+                <li><strong>Symbol:</strong> {{ crypto['symbol'] }}</li>
+                <li><strong>Price (USD):</strong> {{ analysis['Price (USD)'] }}</li>
+                <li><strong>Market Cap (USD):</strong> {{ analysis['Market Cap (USD)'] }}</li>
+                <li><strong>Volume (24h):</strong> {{ analysis['Volume 24h (USD)'] }}</li>
+                <li><strong>Change (24h):</strong> {{ analysis['Change 24h (%)'] }}%</li>
+                <li><strong>Volume/Market Cap Ratio:</strong> {{ analysis['Volume/Market Cap Ratio'] }}</li>
+            </ul>
+        </div>
+
+        <div class="ai-insight">
+            <h2><i class="fas fa-lightbulb"></i> AI Insight</h2>
+            {% if insight %}
+                <p>{{ insight }}</p>
+            {% else %}
+                <p>No AI insights available.</p>
+            {% endif %}
+        </div>
+
+        <h2><i class="fas fa-chart-area"></i> Price Chart</h2>
+        <div class="plot-container">
+            {{ price_chart|safe }}
+        </div>
+
+        <div class="news-container">
+            <h2 class="news-title"><i class="fa-solid fa-newspaper"></i> Latest News </h2>
+            {% if news_items %}
+                {% for news in news_items %}
+                    <div class="news-item">
+                        <a href="{{ news.url }}" target="_blank">{{ news.title }}</a>
+                        <p class="published">Published: {{ news.published }}</p>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No news available for this cryptocurrency.</p>
+            {% endif %}
+        </div>
+
+        {% endif %}
+
+        <a href="/" class="button"><i class="fas fa-home"></i> Back to Home</a>
+
+    </div>
+</body>
+</html>

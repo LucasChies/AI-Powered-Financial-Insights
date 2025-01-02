@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investiment Insights</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% else %}
+            <h1>Stock Analysis Insight</h1>
+            <p>{{ insight }}</p>
+            <h2>Price Target</h2>
+            <p>{{ price_target }}</p>
+            <h2>Stock Prices</h2>
+            <div>{{ plot|safe }}</div>
+        {% endif %}
+        <a href="/">Back to Home</a>
+    </div>
+</body>
+</html>

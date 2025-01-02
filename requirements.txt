@@ -1,0 +1,14 @@
+openai==0.28
+yahoo_fin==0.8.9.1
+yfinance==0.2.50
+flask==3.1.0
+plotly==5.24.1
+matplotlib==3.9.3
+seaborn==0.13.2
+pandas==2.2.3
+feedparser==6.0.11
+pmdarima==2.0.4 
+prophet==1.1.6
+flask-wtf==1.2.2
+flask-mail==0.10.0
+pyodbc==5.2.0

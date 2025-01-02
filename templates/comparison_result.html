@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparison Result</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% else %}
+            <h1><i class="fas fa-lightbulb"></i> Stock Price Comparison Chart</h1>
+            <p>{{ plot|safe }}</p>
+            <h1><i class="fas fa-lightbulb"></i> Insights</h1>
+            <p>{{ insight }}</p>
+            <h1><i class="fas fa-lightbulb"></i>Maximum Drawdown {{ ticker1 }} </h1>
+            <p>{{ max_drawdown1 }}%</p>
+            <h1><i class="fas fa-lightbulb"></i>Maximum Drawdown {{ ticker2 }} </h1>
+            <p>{{ max_drawdown2 }}%</p>
+            <h1><i class="fas fa-lightbulb"></i>Maximum Drawdown {{ ticker3 }} </h1>
+            <p>{{ max_drawdown3 }}%</p>
+            <h1><i class="fas fa-lightbulb"></i>Value at Risk {{ ticker1 }} </h1>
+            <p>{{ var1 }}%</p>
+            <h1><i class="fas fa-lightbulb"></i>Value at Risk {{ ticker2 }} </h1>
+            <p>{{ var2 }}%</p>
+            <h1><i class="fas fa-lightbulb"></i>Value at Risk {{ ticker3 }} </h1>
+            <p>{{ var3 }}%</p>
+            <h2><i class="fas fa-thermometer-half"></i> Correlation Heatmap</h2>
+            <div class="heatmap-container">
+                {{ heatmap|safe }}
+            </div>
+            <div class="news-container">
+                <div class="news-title">Latest News for {{ ticker1 }}</div>
+                {% for article in news1 %}
+                    <div class="news-item">
+                        <a href="{{ article.link }}" target="_blank">{{ article.title }}</a>
+                        <div class="published">{{ article.published }}</div>
+                        <div class="summary">{{ article.summary }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <div class="news-container">
+                <div class="news-title">Latest News for {{ ticker2 }}</div>
+                {% for article in news2 %}
+                    <div class="news-item">
+                        <a href="{{ article.link }}" target="_blank">{{ article.title }}</a>
+                        <div class="published">{{ article.published }}</div>
+                        <div class="summary">{{ article.summary }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="news-container">
+                <div class="news-title">Latest News for {{ ticker3 }}</div>
+                {% for article in news3 %}
+                    <div class="news-item">
+                        <a href="{{ article.link }}" target="_blank">{{ article.title }}</a>
+                        <div class="published">{{ article.published }}</div>
+                        <div class="summary">{{ article.summary }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        <a href="/" class="button"><i class="fas fa-home"></i> Back to Home</a>
+    </div>
+</body>
+</html>

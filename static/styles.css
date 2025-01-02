@@ -1,0 +1,335 @@
+/* General Styles */
+body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+.container {
+    max-width: 800px;
+    margin: 50px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+h1, h2 {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+p {
+    color: #555;
+    line-height: 1.6;
+}
+
+a {
+    text-decoration: none;
+    color: white;
+    background-color: #007BFF;
+    padding: 10px 20px;
+    border-radius: 4px;
+    margin-top: 20px;
+    display: inline-block;
+}
+
+a:hover {
+    background-color: #0056b3;
+}
+
+
+/* Form Styles */
+form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+label {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+input {
+    padding: 10px;
+    width: 80%;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+button {
+    padding: 10px 20px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 1rem;
+}
+
+button:hover {
+    background-color: #218838;
+}
+
+/* Loading Indicator */
+.loading {
+    display: none;
+    margin-top: 20px;
+    font-size: 1.2rem;
+    color: #555;
+}
+
+/* Price Target Section */
+.price-target {
+    margin: 20px 0;
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.price-target h2 {
+    margin: 0;
+    color: #333;
+}
+
+.price-target p {
+    margin: 5px 0 0;
+    color: #555;
+}
+
+/* Plot Container */
+.plot-container, .heatmap-container {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+/* Error Messages */
+.error {
+    color: red;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+/* Buttons */
+.button {
+    display: inline-block;
+    background-color: #007BFF;
+    color: white;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    margin-top: 15px;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+}
+
+.button:hover {
+    background-color: #0056b3;
+}
+
+/* Animations */
+button, a {
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+button:hover, a:hover {
+    transform: translateY(-2px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        width: 90%;
+        padding: 10px;
+    }
+
+    input {
+        width: 100%;
+    }
+
+    button, a {
+        width: 100%;
+        font-size: 1rem;
+    }
+
+    h1, h2 {
+        font-size: 1.5rem;
+    }
+
+    .price-target {
+        font-size: 0.9rem;
+    }
+}
+
+/* AI Insight Section */
+.ai-insight {
+    margin: 20px 0;
+    background-color: #fff5e6;
+    padding: 15px;
+    border-radius: 5px;
+    border-left: 5px solid #ffcc00;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.ai-insight h2 {
+    margin: 0;
+    color: #333;
+}
+
+.ai-insight p {
+    margin: 5px 0 0;
+    color: #555;
+    line-height: 1.6;
+}
+
+/* General container for the news section */
+.news-container {
+    margin: 20px 0;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Title for the news section */
+.news-title {
+    font-size: 1.8em;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #333;
+    border-bottom: 2px solid #007BFF;
+    padding-bottom: 10px;
+}
+
+/* Individual news item */
+.news-item {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.news-item:last-child {
+    border-bottom: none;
+}
+
+/* News title link */
+.news-item a {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #007BFF;
+    text-decoration: none;
+}
+
+.news-item a:hover {
+    text-decoration: underline;
+    color: #0056b3;
+}
+
+/* Published date */
+.news-item .published {
+    font-size: 0.9em;
+    color: #555;
+    margin-top: 5px;
+}
+
+/* News summary */
+.news-item .summary {
+    margin-top: 10px;
+    font-size: 1em;
+    line-height: 1.5em;
+    color: #444;
+}
+
+/* Tooltip container */
+.tooltip {
+    position: relative;
+    cursor: pointer;
+    color: #007bff; /* Blue color to indicate interactivity */
+    text-decoration: underline; /* Underline for emphasis */
+}
+
+/* Tooltip text (hidden by default) */
+.tooltip:hover::after {
+    content: attr(title); /* Get the text from the 'title' attribute */
+    position: absolute;
+    bottom: 100%; /* Position above the hovered element */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #343a40; /* Dark background for tooltip */
+    color: #fff; /* White text color for contrast */
+    padding: 5px 10px; /* Padding for readability */
+    border-radius: 5px; /* Rounded corners */
+    font-size: 0.9rem; /* Slightly smaller font size */
+    white-space: nowrap; /* Prevent text wrapping */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    z-index: 1000; /* Ensure tooltip appears above other elements */
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+}
+
+/* Hide tooltip text when not hovered */
+.tooltip::after {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.crypto-info {
+    background-color: #f8f9fa; /* Light background for readability */
+    border: 1px solid #dee2e6; /* Subtle border */
+    border-radius: 10px; /* Rounded corners */
+    padding: 20px; /* Spacing inside the container */
+    margin-top: 20px; /* Space above the section */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Light shadow for depth */
+    font-family: 'Roboto', sans-serif; /* Consistent font style */
+    color: #212529; /* Dark text for readability */
+}
+
+.crypto-info h2 {
+    font-size: 1.5rem;
+    color: #495057; /* Slightly darker heading */
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.crypto-info p {
+    font-size: 1rem;
+    margin: 5px 0;
+    color: #343a40;
+    line-height: 1.5;
+}
+
+.crypto-info ul {
+    list-style-type: none; /* Remove default bullets */
+    padding: 0;            /* Remove extra padding */
+}
+
+.crypto-info ul li {
+    display: flex;
+    justify-content: space-between; /* Justify content between label and value */
+    padding: 5px 0;                /* Add spacing between items */
+    border-bottom: 1px solid #ddd; /* Optional: Add a separator between items */
+}
+
+.crypto-info ul li strong {
+    margin-right: 10px; /* Add spacing between label and value */
+    flex-shrink: 0;     /* Prevent labels from shrinking */
+}
+
+.crypto-info ul li span {
+    text-align: right;  /* Align values to the right */
+    flex-grow: 1;       /* Allow values to take available space */
+}

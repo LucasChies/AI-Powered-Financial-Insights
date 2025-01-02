@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Single Stock Result</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-chart-line"></i> {{ ticker }} Analysis</h1>
+    
+        <h2><i class="fas fa-chart-area"></i> Stock Price Chart</h2>
+        <div class="plot-container">
+            {{ plot|safe }}
+        </div>
+
+        <div class="ai-insight">
+            <h2><i class="fas fa-lightbulb"></i> AI Insight</h2>
+            <p>{{ insight }}</p>
+        </div>
+
+        <div class="ai-insight">
+            <h2><i class="fas fa-lightbulb"></i> Forecast (Next 10 Days)</h2>
+            <p>{{ forecast|safe }}</p>
+        </div>
+
+        <div class="ai-insight">
+            <h2><i class="fas fa-lightbulb"></i> Risk Management Metrics</h2>
+            <span class="tooltip" title="Quantifies potential losses at a given confidence level."></span>
+            <p><strong>Value at Risk (VaR):</strong> {{ var }}%</p>
+            <span class="tooltip" title="Measures the maximum observed loss from a peak."></span>
+            <p><strong>Maximum Drawdown:</strong> {{ max_drawdown }}%</p>
+        </div>
+
+        <div class="news-container">
+            <div class="news-title"><i class="fa-solid fa-newspaper"></i> Latest News </div>
+            {% for article in news %}
+                <div class="news-item">
+                    <a href="{{ article.link }}" target="_blank">{{ article.title }}</a>
+                    <div class="published">{{ article.published }}</div>
+                    <div class="summary">{{ article.summary }}</div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <a href="/single" class="button"><i class="fas fa-arrow-left"></i> Back</a>
+    </div>
+</body>
+</html>
+
+
