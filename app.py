@@ -19,6 +19,7 @@ import requests
 from prophet import Prophet
 from functools import lru_cache
 from dotenv import load_dotenv
+from waitress import serve
 
 load_dotenv()
 
