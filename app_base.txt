@@ -16,16 +16,10 @@ import plotly.graph_objects as go
 import io
 import base64
 import requests
-import plotly.graph_objects as go
 from prophet import Prophet
 from functools import lru_cache
 from dotenv import load_dotenv
 from waitress import serve
-from flask_sqlalchemy import SQLAlchemy
-from flask import render_template, request, redirect, url_for, flash
-from binance.client import Client
-from datetime import datetime
-
 
 load_dotenv()
 
@@ -37,28 +31,6 @@ openai.api_type = "azure"
 openai.api_key = os.getenv("OPENAI_API_KEY")  # Use environment variable
 openai.api_base = "https://lchie-m48gp5rl-francecentral.openai.azure.com/"
 openai.api_version = "2024-02-01"
-
-# Initialize Binance Client
-BINANCE_API_KEY = os.getenv("BINANCE_API_KEY")  # Store in environment variables
-BINANCE_API_SECRET = os.getenv("BINANCE_API_SECRET")  # Store in environment variables
-binance_client = Client(BINANCE_API_KEY, BINANCE_API_SECRET)
-
-# Configure the app for Azure SQL Database
-app.config['SQLALCHEMY_DATABASE_URI'] = (
-    f"mssql+pyodbc://{os.getenv('DB_USERNAME')}:{os.getenv('DB_PASSWORD')}"
-    f"@{os.getenv('DB_SERVER')}/{os.getenv('DB_NAME')}"
-    "?driver=ODBC+Driver+18+for+SQL+Server"
-)
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-db = SQLAlchemy(app)
-
-# Knowledge Base Model
-class KnowledgeBase(db.Model):
-    __tablename__ = 'knowledge_base'
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(255), nullable=False)
-    content = db.Column(db.Text, nullable=False)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -78,20 +50,6 @@ def get_stock_data(ticker):
     except Exception as e:
         logging.error(f"Error fetching stock data: {e}")
         return None
-    
-# Script to insert initial data into the database
-@app.before_request
-def ensure_database_seeded():
-    if not KnowledgeBase.query.first():  # Seed only if no data exists
-        topics = [
-            {"title": "Stock Analysis Basics", "content": "Details about stock analysis go here..."},
-            {"title": "Cryptocurrency Insights", "content": "Learn about cryptocurrency trends..."},
-            {"title": "Risk Management Techniques", "content": "Explore methods to manage financial risks..."}
-        ]
-        for topic in topics:
-            db.session.add(KnowledgeBase(title=topic['title'], content=topic['content']))
-        db.session.commit()
-
 
 # Function to generate AI insights
 def get_ai_insight(prompt):
@@ -105,7 +63,7 @@ def get_ai_insight(prompt):
         return response.choices[0].text.strip()
     except Exception as e:
         return f"Error generating AI insight: {e}"
-
+    
 # Crypto Narratives
 CRYPTO_NARRATIVES = {
     "BTC": "Digital Gold, Store of Value",
@@ -150,14 +108,14 @@ def get_crypto_data_with_insight(crypto_symbol):
     except requests.exceptions.RequestException as e:
         logging.error(f"Error fetching cryptocurrency data: {e}")
         return None, None
-
-# Generic function to analyze market data for both crypto and stocks
-def analyze_market_data(market_data):
+    
+# Crypto Analyze    
+def analyze_crypto_data(crypto_data):
     try:
-        market_cap = market_data["quote"]["USD"]["market_cap"]
-        volume_24h = market_data["quote"]["USD"]["volume_24h"]
-        price = market_data["quote"]["USD"]["price"]
-        change_24h = market_data["quote"]["USD"]["percent_change_24h"]
+        market_cap = crypto_data["quote"]["USD"]["market_cap"]
+        volume_24h = crypto_data["quote"]["USD"]["volume_24h"]
+        price = crypto_data["quote"]["USD"]["price"]
+        change_24h = crypto_data["quote"]["USD"]["percent_change_24h"]
 
         volume_market_cap_ratio = volume_24h / market_cap if market_cap > 0 else None
 
@@ -171,165 +129,22 @@ def analyze_market_data(market_data):
 
         return analysis
     except KeyError as e:
-        logging.error(f"Key error occurred: {e}")
-        return "Key error occurred while analyzing market data."
-    except ValueError as e:
-        logging.error(f"Value error occurred: {e}")
-        return "Value error occurred while analyzing market data."
-    except Exception as e:
-        logging.error(f"Unexpected error: {e}")
-        return "An unexpected error occurred."
+        return f"Error in analyzing crypto data: {e}"
 
-    
-# Getting prices ang historical data from Binance
-def fetch_crypto_prices(symbol, interval='1h', limit=100):
-    """
-    Fetch historical price data for a cryptocurrency using Binance API.
-
-    Args:
-        symbol (str): Cryptocurrency symbol (e.g., 'BTCUSDT').
-        interval (str): Kline interval (e.g., '1h', '1d').
-        limit (int): Number of data points to fetch (default: 100).
-
-    Returns:
-        pd.DataFrame: A DataFrame with Date, Open, High, Low, Close, and Volume.
-    """
-    try:
-        klines = binance_client.get_klines(symbol=symbol, interval=interval, limit=limit)
-        data = pd.DataFrame(klines, columns=[
-            "Open Time", "Open", "High", "Low", "Close", "Volume",
-            "Close Time", "Quote Asset Volume", "Number of Trades",
-            "Taker Buy Base Asset Volume", "Taker Buy Quote Asset Volume", "Ignore"
-        ])
-        data["Date"] = pd.to_datetime(data["Open Time"], unit='ms')
-        data["Open"] = data["Open"].astype(float)
-        data["High"] = data["High"].astype(float)
-        data["Low"] = data["Low"].astype(float)
-        data["Close"] = data["Close"].astype(float)
-        data["Volume"] = data["Volume"].astype(float)
-        return data[["Date", "Open", "High", "Low", "Close", "Volume"]]
-    except Exception as e:
-        logging.error(f"Error fetching Binance data: {e}")
-        return None
-    
 # Plotly crypto price
 def plot_crypto_price(price_data, crypto_symbol):
-    """
-    Plot the historical price chart for a cryptocurrency.
-
-    Args:
-        price_data (pd.DataFrame): DataFrame containing Date and Close price.
-        crypto_symbol (str): Symbol of the cryptocurrency.
-
-    Returns:
-        str: HTML representation of the Plotly chart.
-    """
     try:
         fig = px.line(
             price_data,
             x="Date",
-            y="Close",
+            y="Price (USD)",
             title=f"{crypto_symbol} Price Chart",
-            labels={"Close": "Price (USD)"}
+            labels={"Price (USD)": "Price (USD)"}
         )
-        fig.update_layout(template="plotly_dark")
         return fig.to_html()
     except Exception as e:
-        logging.error(f"Error generating crypto price chart: {e}")
-        return "Error generating crypto price chart."
-
-#  Forecast crypto values
-def forecast_crypto_prices(price_data, periods=30):
-    """
-    Forecast cryptocurrency prices using Prophet.
+        return f"Error generating crypto price chart: {e}"
     
-    Args:
-        price_data (pd.DataFrame): DataFrame with 'Date' and 'Close' columns.
-        periods (int): Number of days into the future to forecast.
-
-    Returns:
-        pd.DataFrame: DataFrame containing forecasted prices.
-    """
-    try:
-        # Prepare data for Prophet
-        df = price_data[['Date', 'Close']].rename(columns={'Date': 'ds', 'Close': 'y'})
-
-        # Initialize and fit the model
-        model = Prophet()
-        model.fit(df)
-
-        # Create a future dataframe
-        future = model.make_future_dataframe(periods=periods)
-
-        # Predict future prices
-        forecast = model.predict(future)
-
-        return forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']]
-    except Exception as e:
-        logging.error(f"Error in forecasting: {e}")
-        return None
-    
-# visualize historical and forecasted prices
-def plot_forecast(forecast, historical_data):
-    """
-    Plot the historical and forecasted cryptocurrency prices.
-
-    Args:
-        forecast (pd.DataFrame): DataFrame with forecasted prices.
-        historical_data (pd.DataFrame): DataFrame with historical prices.
-
-    Returns:
-        str: HTML representation of the Plotly chart.
-    """
-    try:
-        fig = go.Figure()
-
-        # Add historical data
-        fig.add_trace(go.Scatter(
-            x=historical_data['Date'], 
-            y=historical_data['Close'], 
-            name='Historical',
-            mode='lines'
-        ))
-
-        # Add forecasted data
-        fig.add_trace(go.Scatter(
-            x=forecast['ds'], 
-            y=forecast['yhat'], 
-            name='Forecast',
-            mode='lines'
-        ))
-
-        # Add confidence intervals
-        fig.add_trace(go.Scatter(
-            x=forecast['ds'], 
-            y=forecast['yhat_upper'], 
-            name='Upper Confidence Interval',
-            line=dict(dash='dot'),
-            opacity=0.5
-        ))
-        fig.add_trace(go.Scatter(
-            x=forecast['ds'], 
-            y=forecast['yhat_lower'], 
-            name='Lower Confidence Interval',
-            line=dict(dash='dot'),
-            opacity=0.5
-        ))
-
-        # Layout
-        fig.update_layout(
-            title="Cryptocurrency Price Forecast",
-            xaxis_title="Date",
-            yaxis_title="Price (USD)",
-            template="plotly_dark"
-        )
-
-        return fig.to_html()
-    except Exception as e:
-        logging.error(f"Error generating forecast plot: {e}")
-        return "Error generating forecast plot."
-
-
 # Crypto News from Cryptopanic API
 def get_crypto_news(crypto_symbol, api_key, limit=5):
     """
@@ -374,13 +189,12 @@ def get_crypto_news(crypto_symbol, api_key, limit=5):
 
 # Risk management: Value at Risk (VaR)
 def calculate_var(data, confidence_level=0.95):
-    if 'Close' not in data.columns:
-        logging.error("Data does not contain 'Close' column.")
-        return "Data does not contain 'Close' column."
-    
-    returns = data['Close'].pct_change().dropna()
-    var = np.percentile(returns, (1 - confidence_level) * 100)
-    return round(var * 100, 2)  # As a percentage
+    try:
+        returns = data['Close'].pct_change().dropna()
+        var = np.percentile(returns, (1 - confidence_level) * 100)
+        return round(var * 100, 2)  # As a percentage
+    except Exception as e:
+        return f"Error in VaR calculation: {e}"
 
 # Risk management: Maximum Drawdown
 def calculate_max_drawdown(data):
@@ -391,7 +205,7 @@ def calculate_max_drawdown(data):
         return round(max_drawdown * 100, 2)  # As a percentage
     except Exception as e:
         return f"Error in drawdown calculation: {e}"
-
+    
 # Forecast future stock prices
 def forecast_stock_prices(data, periods=10):
     try:
@@ -411,7 +225,7 @@ def forecast_stock_prices(data, periods=10):
         return forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].tail(periods)
     except Exception as e:
         return f"Error in forecasting: {e}"
-
+    
 # Plotly to visualize forecast results
 def plot_forecast(forecast, data):
     fig = go.Figure()
@@ -421,7 +235,7 @@ def plot_forecast(forecast, data):
     fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat_upper'], name='Upper Bound', line=dict(dash='dot')))
     fig.update_layout(title='Stock Price Forecast', xaxis_title='Date', yaxis_title='Price')
     return fig.to_html()
-
+    
 # Plot stock data
 def plot_stock(data, ticker):
     try:
@@ -435,7 +249,7 @@ def plot_stock(data, ticker):
         return fig.to_html()
     except Exception as e:
         return f"Error generating plot: {e}"
-
+    
 # Plot comparison data
 def plot_comparison(data1, data2, data3, ticker1, ticker2, ticker3):
     try:
@@ -453,7 +267,7 @@ def plot_comparison(data1, data2, data3, ticker1, ticker2, ticker3):
             x='Date',
             y='Close',
             color='Ticker',
-            title=f"Comparison of {ticker1}, {ticker2}, and {ticker3}",
+            title=f"Comparison of {ticker1} and {ticker2} and {ticker3}",
             labels={"Close": "Close Price"}
         )
         return fig.to_html()
@@ -486,7 +300,43 @@ def generate_correlation_heatmap(data1, data2, data3, ticker1, ticker2, ticker3)
         return f"<img src='data:image/png;base64,{encoded_image}'/>"
     except Exception as e:
         return f"Error generating heatmap: {e}"
+    
+# Generate correlation heatmap including AI insight integration
+def generate_correlation_heatmap(data1, data2, data3, ticker1, ticker2, ticker3):
+    try:
+        # Prepare data for correlation
+        merged_data = pd.DataFrame({
+            ticker1: data1['Close'],
+            ticker2: data2['Close'],
+            ticker3: data3['Close']
+        })
+        correlation = merged_data.corr()
 
+        # Plot heatmap
+        plt.figure(figsize=(5, 4))
+        sns.heatmap(correlation, annot=True, cmap="coolwarm", fmt=".2f")
+        plt.title("Correlation Heatmap")
+
+        # Save the plot as an image and encode it
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        encoded_image = base64.b64encode(buf.getvalue()).decode('utf-8')
+        buf.close()
+
+        # Generate AI insights
+        insight_prompt = (
+            f"Analyze the following stock correlation matrix:\n\n{correlation.to_string()}\n\n"
+            "Provide key insights on how these stocks are related and what this might imply for portfolio diversification or risk."
+        )
+        ai_insight = get_ai_insight(insight_prompt)
+
+        # Combine heatmap and insight into the output
+        return f"<img src='data:image/png;base64,{encoded_image}'/><p>{ai_insight}</p>"
+    except Exception as e:
+        return f"Error generating heatmap: {e}"
+
+    
 # Function to fetch and parse RSS news feed from Yahoo Finance
 def get_stock_news(ticker):
     try:
@@ -527,112 +377,43 @@ def index():
         return redirect(url_for('login'))
     return render_template('index.html')
 
-@app.route('/knowledge-base', methods=['GET'])
-def knowledge_base():
-    # Mock data for the knowledge base
-    topics = KnowledgeBase.query.all()
-    return render_template('knowledge_base.html', topics=topics)
-
-@app.route('/admin/knowledge-base', methods=['GET'])
-def admin_knowledge_base():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    topics = KnowledgeBase.query.all()
-    return render_template('admin_knowledge_base.html', topics=topics)
-
-@app.route('/admin/knowledge-base/add', methods=['GET', 'POST'])
-def add_topic():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    if request.method == 'POST':
-        title = request.form['title']
-        content = request.form['content']
-        if title and content:
-            new_topic = KnowledgeBase(title=title, content=content)
-            db.session.add(new_topic)
-            db.session.commit()
-            flash('Topic added successfully!', 'success')
-            return redirect(url_for('admin_knowledge_base'))
-        flash('Please provide a title and content.', 'danger')
-    return render_template('add_topic.html')
-
-@app.route('/admin/knowledge-base/edit/<int:id>', methods=['GET', 'POST'])
-def edit_topic(id):
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    topic = KnowledgeBase.query.get_or_404(id)
-    if request.method == 'POST':
-        topic.title = request.form['title']
-        topic.content = request.form['content']
-        db.session.commit()
-        flash('Topic updated successfully!', 'success')
-        return redirect(url_for('admin_knowledge_base'))
-    return render_template('edit_topic.html', topic=topic)
-
-@app.route('/admin/knowledge-base/delete/<int:id>', methods=['POST'])
-def delete_topic(id):
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    topic = KnowledgeBase.query.get_or_404(id)
-    db.session.delete(topic)
-    db.session.commit()
-    flash('Topic deleted successfully!', 'success')
-    return redirect(url_for('admin_knowledge_base'))
-
-
 @app.route('/crypto', methods=['GET', 'POST'])
 def crypto_analysis():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        crypto_symbol = request.form.get('crypto_symbol').upper()
+        crypto_symbol = request.form.get('crypto_symbol')
         if not crypto_symbol:
             return render_template('crypto_form.html', error="Please enter a cryptocurrency symbol.")
-        
+        crypto_symbol = crypto_symbol.upper()
+
         # Fetch news using CryptoPanic API
         api_key = os.getenv("CRYPTOPANIC_API_KEY")  # Store your CryptoPanic API key in environment variables
         news_items = get_crypto_news(crypto_symbol, api_key)
+        narrative = get_crypto_data_with_insight(crypto_symbol)
+
         crypto_data, narrative, ai_insight = get_crypto_data_with_insight(crypto_symbol)
         if not crypto_data:
             return render_template('crypto_result.html', error="No data found for the given cryptocurrency.")
-        
-        # Fetch price data from Binance
-        symbol = f"{crypto_symbol}USDT"  # Binance format for USD trading pairs
-        price_data = fetch_crypto_prices(symbol)
-        if price_data is None or price_data.empty:
-            return render_template('crypto_result.html', error="No data found for the given cryptocurrency.")
-        
-        # Perform analysis
-        latest_price = price_data["Close"].iloc[-1]
-        market_volume = price_data["Volume"].sum()  # Example: Summing volumes for analysis
-        crypto_analysis = analyze_market_data(crypto_data)
 
-        # Generate the price chart
+        crypto_analysis = analyze_crypto_data(crypto_data)
+        price_data = pd.DataFrame({
+            "Date": [pd.Timestamp.now()],
+            "Price (USD)": [crypto_data["quote"]["USD"]["price"]]
+        })
         price_chart = plot_crypto_price(price_data, crypto_symbol)
 
-        # Forecast future prices
-        forecast = forecast_crypto_prices(price_data)
-        if forecast is not None:
-            forecast_chart = plot_forecast(forecast, price_data)
-        else:
-            forecast_chart = "Forecasting error."
-
-        # Pass all required data to the template
-        crypto_info = {"name": crypto_symbol, "price": latest_price}
         return render_template(
             'crypto_result.html',
-            price_chart=price_chart,
-            crypto=crypto_info,
+            crypto=crypto_data,
             analysis=crypto_analysis,
-            forecast_chart=forecast_chart,
             narrative=narrative,
             insight=ai_insight,
+            price_chart=price_chart,
             news_items=news_items
         )
     return render_template('crypto_form.html')
-
-
 
 @app.route('/single', methods=['GET', 'POST'])
 def single_stock():
@@ -640,60 +421,53 @@ def single_stock():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        return process_single_stock_request()
+        ticker = request.form['ticker'].upper()
+        data = get_stock_data(ticker)
+
+        # Check if the input is for crypto
+        if data is None:  # If no stock data, try fetching crypto data
+            crypto_data, ai_insight = get_crypto_data_with_insight(ticker)
+            if crypto_data:
+                return render_template('crypto_result.html', crypto=crypto_data, insight=ai_insight)
+            return render_template('single_result.html', error="No data found for the given ticker or cryptocurrency.")
+
+        # Stock-specific logic
+        prompt = (
+            f"Analyze the stock {ticker} based on the following historical data:\n\n"
+            f"{data.tail(10).to_string()}\n\n"
+            "Provide insights on the performance and recommendations for potential investors."
+            "Consider the following factors in your analysis:\n"
+            "- Recent price trends (uptrend, downtrend, or sideways movement).\n"
+            "- Volatility and risk level (e.g., Value at Risk, maximum drawdown).\n"
+            "- Key performance indicators (e.g., recent gains or losses).\n"
+            "- Sector or industry trends that may impact the stock.\n"
+            "- Comparison with similar stocks or indices in the market.\n"
+            "- Company fundamentals (if available).\n\n"
+            "Based on these factors, provide a detailed recommendation:\n"
+            "- Is this stock a good investment at the current price? Why or why not?\n"
+            "- If possible, include potential risks and rewards.\n"
+            "- Suggest a target price range or specific scenarios under which it would be better to invest or avoid this stock.\n\n"
+            "Your response should provide actionable insights for a potential investor."
+
+        )
+        ai_insight = get_ai_insight(prompt)
+        var = calculate_var(data)
+        max_drawdown = calculate_max_drawdown(data)
+        plot = plot_stock(data, ticker)
+
+        # Forecast future stock prices
+        forecast = forecast_stock_prices(data)
+
+        return render_template(
+            'single_result.html',
+            plot=plot,
+            insight=ai_insight,
+            var=var,
+            max_drawdown=max_drawdown,
+            forecast=forecast.to_html(index=False, justify="center"),
+            news=get_stock_news(ticker)
+        )
     return render_template('single_form.html')
-
-def process_single_stock_request():
-    ticker = request.form['ticker'].upper()
-    data = get_stock_data(ticker)
-
-    if data is None:  
-        return handle_crypto_request(ticker)
-
-    return handle_stock_request(data, ticker)
-
-def handle_stock_request(data, ticker):
-    prompt = generate_stock_analysis_prompt(data, ticker)
-    ai_insight = get_ai_insight(prompt)
-    var = calculate_var(data)
-    max_drawdown = calculate_max_drawdown(data)
-    plot = plot_stock(data, ticker)
-    forecast = forecast_stock_prices(data)
-
-    return render_template(
-        'single_result.html',
-        plot=plot,
-        insight=ai_insight,
-        var=var,
-        max_drawdown=max_drawdown,
-        forecast=forecast.to_html(index=False, justify="center"),
-        news=get_stock_news(ticker)
-    )
-
-def handle_crypto_request(ticker):
-    crypto_data, ai_insight = get_crypto_data_with_insight(ticker)
-    if crypto_data:
-        return render_template('crypto_result.html', crypto=crypto_data, insight=ai_insight)
-    return render_template('single_result.html', error="No data found for the given ticker or cryptocurrency.")
-
-def generate_stock_analysis_prompt(data, ticker):
-    return (
-        f"Analyze the stock {ticker} based on the following historical data:\n\n"
-        f"{data.tail(10).to_string()}\n\n"
-        "Provide insights on the performance and recommendations for potential investors."
-        "Consider the following factors in your analysis:\n"
-        "- Recent price trends (uptrend, downtrend, or sideways movement).\n"
-        "- Volatility and risk level (e.g., Value at Risk, maximum drawdown).\n"
-        "- Key performance indicators (e.g., recent gains or losses).\n"
-        "- Sector or industry trends that may impact the stock.\n"
-        "- Comparison with similar stocks or indices in the market.\n"
-        "- Company fundamentals (if available).\n\n"
-        "Based on these factors, provide a detailed recommendation:\n"
-        "- Is this stock a good investment at the current price? Why or why not?\n"
-        "- If possible, include potential risks and rewards.\n"
-        "- Suggest a target price range or specific scenarios under which it would be better to invest or avoid this stock.\n\n"
-        "Your response should provide actionable insights for a potential investor."
-    )
 
 @app.route('/compare', methods=['GET', 'POST'])
 def compare_stocks():
@@ -721,11 +495,11 @@ def compare_stocks():
         var1 = calculate_var(data1)
         var2 = calculate_var(data2)
         var3 = calculate_var(data3)
-        news1 = get_stock_news(ticker1)
-        news2 = get_stock_news(ticker2)
-        news3 = get_stock_news(ticker3)
+        news1=get_stock_news(ticker1)
+        news2=get_stock_news(ticker2)
+        news3=get_stock_news(ticker3)
         insight = get_ai_insight(
-            f"Compare the performance of two or three stocks, {ticker1}, {ticker2}, and {ticker3}, over the last 10 days.\n\n "
+            f"Compare the performance of two or tree stocks, {ticker1} and {ticker2} and {ticker3}, over the last 10 days.\n\n "
             f"Here is the data:\n\n{ticker1}:\n{data1.to_string()}\n\n{ticker2}:\n{data2.to_string()}\n\n{ticker3}:\n{data3.to_string()}\n\n"
             "Consider the following factors in your analysis:\n"
             "- Recent price trends (uptrend, downtrend, or sideways movement).\n"
@@ -742,6 +516,8 @@ def compare_stocks():
         )
         return render_template('comparison_result.html', plot=plot, var1=var1, var2=var2, var3=var3, max_drawdown1=max_drawdown1, max_drawdown2=max_drawdown2, max_drawdown3=max_drawdown3, heatmap=heatmap, insight=insight, news1=news1, news2=news2, news3=news3)
     return render_template('comparison_form.html')
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)

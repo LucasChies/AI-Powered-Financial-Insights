@@ -26,6 +26,15 @@
         </div>
 
         <div class="ai-insight">
+            <h2><i class="fa-regular fa-clipboard"></i> Crypto Narrative</h2>
+            {% if narrative %}
+                <p>{{ narrative }}</p>
+            {% else %}
+                <p>No narrative available.</p>
+            {% endif %}
+        </div>
+
+        <div class="ai-insight">
             <h2><i class="fas fa-lightbulb"></i> AI Insight</h2>
             {% if insight %}
                 <p>{{ insight }}</p>
@@ -36,7 +45,16 @@
 
         <h2><i class="fas fa-chart-area"></i> Price Chart</h2>
         <div class="plot-container">
-            {{ price_chart|safe }}
+            <div>
+                {{ price_chart|safe }}
+            </div>
+        </div>
+
+        <h2><i class="fa-brands fa-react"></i> Forecasted Prices</h2>
+        <div class="plot-container">
+            <div>
+                {{ forecast_chart|safe }}
+            </div>
         </div>
 
         <div class="news-container">
@@ -56,6 +74,7 @@
         {% endif %}
 
         <a href="/" class="button"><i class="fas fa-home"></i> Back to Home</a>
+        <a href="/knowledge-base" class="button"><i class="fas fa-book"></i> Knowledge Base</a>
 
     </div>
 </body>

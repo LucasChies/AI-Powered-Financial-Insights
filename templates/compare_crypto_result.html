@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compare Cryptocurrencies Result</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-balance-scale"></i> Cryptocurrency Comparison</h1>
+        
+        {% if error_message %}
+        <div class="error-message" style="color: red;">
+            <p>{{ error_message }}</p>
+        </div>
+        {% else %}
+        <div>
+            <h2>Comparison Plot</h2>
+            <img src="{{ plot }}" alt="Crypto Comparison Plot">
+        </div>
+        <div>
+            <h3>Indicators</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Indicator</th>
+                        {% if symbol1 in indicators %}
+                            <td>{{ indicators[symbol1]['RSI'].iloc[-1] }}</td>
+                            <td>{{ indicators[symbol2]['RSI'].iloc[-1] }}</td>
+                            <td>{{ indicators[symbol3]['RSI'].iloc[-1] }}</td>
+                        {% else %}
+                            <td>Data for {{ symbol1 }} not available</td>
+                            <td>Data for {{ symbol2 }} not available</td>
+                            <td>Data for {{ symbol3 }} not available</td>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>RSI</td>
+                        <td>{{ indicators[symbol1]['RSI'].iloc[-1] }}</td>
+                        <td>{{ indicators[symbol2]['RSI'].iloc[-1] }}</td>
+                        <td>{{ indicators[symbol3]['RSI'].iloc[-1] }}</td>
+                    </tr>
+                    <tr>
+                        <td>MACD</td>
+                        <td>{{ indicators[symbol1]['MACD'].iloc[-1] }}</td>
+                        <td>{{ indicators[symbol2]['MACD'].iloc[-1] }}</td>
+                        <td>{{ indicators[symbol3]['MACD'].iloc[-1] }}</td>
+                    </tr>
+                    <!-- Add more rows for other indicators -->
+                </tbody>
+                <td>{{ rsi_value1 }}</td>
+                <td>{{ rsi_value2 }}</td>
+            </table>
+        </div>
+        <a href="/" class="button"><i class="fas fa-home"></i> Back to Home</a>
+        {% endif %}
+    </div>
+</body>
+</html>

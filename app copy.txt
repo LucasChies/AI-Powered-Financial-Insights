@@ -16,16 +16,12 @@ import plotly.graph_objects as go
 import io
 import base64
 import requests
-import plotly.graph_objects as go
 from prophet import Prophet
 from functools import lru_cache
 from dotenv import load_dotenv
 from waitress import serve
 from flask_sqlalchemy import SQLAlchemy
 from flask import render_template, request, redirect, url_for, flash
-from binance.client import Client
-from datetime import datetime
-
 
 load_dotenv()
 
@@ -37,11 +33,6 @@ openai.api_type = "azure"
 openai.api_key = os.getenv("OPENAI_API_KEY")  # Use environment variable
 openai.api_base = "https://lchie-m48gp5rl-francecentral.openai.azure.com/"
 openai.api_version = "2024-02-01"
-
-# Initialize Binance Client
-BINANCE_API_KEY = os.getenv("BINANCE_API_KEY")  # Store in environment variables
-BINANCE_API_SECRET = os.getenv("BINANCE_API_SECRET")  # Store in environment variables
-binance_client = Client(BINANCE_API_KEY, BINANCE_API_SECRET)
 
 # Configure the app for Azure SQL Database
 app.config['SQLALCHEMY_DATABASE_URI'] = (
@@ -80,6 +71,20 @@ def get_stock_data(ticker):
         return None
     
 # Script to insert initial data into the database
+# @app.before_first_request
+# def seed_database():
+#     if not KnowledgeBase.query.first():  # Only seed if the table is empty
+#         topics = [
+#             {"title": "Stock Analysis Basics", "content": "Details about stock analysis go here..."},
+#             {"title": "Cryptocurrency Insights", "content": "Learn about cryptocurrency trends..."},
+#             {"title": "Risk Management Techniques", "content": "Explore methods to manage financial risks..."}
+#         ]
+#         for topic in topics:
+#             db.session.add(KnowledgeBase(title=topic['title'], content=topic['content']))
+#         db.session.commit()
+
+# Database seeding without using @app.before_first_request
+
 @app.before_request
 def ensure_database_seeded():
     if not KnowledgeBase.query.first():  # Seed only if no data exists
@@ -91,6 +96,8 @@ def ensure_database_seeded():
         for topic in topics:
             db.session.add(KnowledgeBase(title=topic['title'], content=topic['content']))
         db.session.commit()
+
+
 
 
 # Function to generate AI insights
@@ -180,155 +187,19 @@ def analyze_market_data(market_data):
         logging.error(f"Unexpected error: {e}")
         return "An unexpected error occurred."
 
-    
-# Getting prices ang historical data from Binance
-def fetch_crypto_prices(symbol, interval='1h', limit=100):
-    """
-    Fetch historical price data for a cryptocurrency using Binance API.
-
-    Args:
-        symbol (str): Cryptocurrency symbol (e.g., 'BTCUSDT').
-        interval (str): Kline interval (e.g., '1h', '1d').
-        limit (int): Number of data points to fetch (default: 100).
-
-    Returns:
-        pd.DataFrame: A DataFrame with Date, Open, High, Low, Close, and Volume.
-    """
-    try:
-        klines = binance_client.get_klines(symbol=symbol, interval=interval, limit=limit)
-        data = pd.DataFrame(klines, columns=[
-            "Open Time", "Open", "High", "Low", "Close", "Volume",
-            "Close Time", "Quote Asset Volume", "Number of Trades",
-            "Taker Buy Base Asset Volume", "Taker Buy Quote Asset Volume", "Ignore"
-        ])
-        data["Date"] = pd.to_datetime(data["Open Time"], unit='ms')
-        data["Open"] = data["Open"].astype(float)
-        data["High"] = data["High"].astype(float)
-        data["Low"] = data["Low"].astype(float)
-        data["Close"] = data["Close"].astype(float)
-        data["Volume"] = data["Volume"].astype(float)
-        return data[["Date", "Open", "High", "Low", "Close", "Volume"]]
-    except Exception as e:
-        logging.error(f"Error fetching Binance data: {e}")
-        return None
-    
 # Plotly crypto price
 def plot_crypto_price(price_data, crypto_symbol):
-    """
-    Plot the historical price chart for a cryptocurrency.
-
-    Args:
-        price_data (pd.DataFrame): DataFrame containing Date and Close price.
-        crypto_symbol (str): Symbol of the cryptocurrency.
-
-    Returns:
-        str: HTML representation of the Plotly chart.
-    """
     try:
         fig = px.line(
             price_data,
             x="Date",
-            y="Close",
+            y="Price (USD)",
             title=f"{crypto_symbol} Price Chart",
-            labels={"Close": "Price (USD)"}
+            labels={"Price (USD)": "Price (USD)"}
         )
-        fig.update_layout(template="plotly_dark")
         return fig.to_html()
     except Exception as e:
-        logging.error(f"Error generating crypto price chart: {e}")
-        return "Error generating crypto price chart."
-
-#  Forecast crypto values
-def forecast_crypto_prices(price_data, periods=30):
-    """
-    Forecast cryptocurrency prices using Prophet.
-    
-    Args:
-        price_data (pd.DataFrame): DataFrame with 'Date' and 'Close' columns.
-        periods (int): Number of days into the future to forecast.
-
-    Returns:
-        pd.DataFrame: DataFrame containing forecasted prices.
-    """
-    try:
-        # Prepare data for Prophet
-        df = price_data[['Date', 'Close']].rename(columns={'Date': 'ds', 'Close': 'y'})
-
-        # Initialize and fit the model
-        model = Prophet()
-        model.fit(df)
-
-        # Create a future dataframe
-        future = model.make_future_dataframe(periods=periods)
-
-        # Predict future prices
-        forecast = model.predict(future)
-
-        return forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']]
-    except Exception as e:
-        logging.error(f"Error in forecasting: {e}")
-        return None
-    
-# visualize historical and forecasted prices
-def plot_forecast(forecast, historical_data):
-    """
-    Plot the historical and forecasted cryptocurrency prices.
-
-    Args:
-        forecast (pd.DataFrame): DataFrame with forecasted prices.
-        historical_data (pd.DataFrame): DataFrame with historical prices.
-
-    Returns:
-        str: HTML representation of the Plotly chart.
-    """
-    try:
-        fig = go.Figure()
-
-        # Add historical data
-        fig.add_trace(go.Scatter(
-            x=historical_data['Date'], 
-            y=historical_data['Close'], 
-            name='Historical',
-            mode='lines'
-        ))
-
-        # Add forecasted data
-        fig.add_trace(go.Scatter(
-            x=forecast['ds'], 
-            y=forecast['yhat'], 
-            name='Forecast',
-            mode='lines'
-        ))
-
-        # Add confidence intervals
-        fig.add_trace(go.Scatter(
-            x=forecast['ds'], 
-            y=forecast['yhat_upper'], 
-            name='Upper Confidence Interval',
-            line=dict(dash='dot'),
-            opacity=0.5
-        ))
-        fig.add_trace(go.Scatter(
-            x=forecast['ds'], 
-            y=forecast['yhat_lower'], 
-            name='Lower Confidence Interval',
-            line=dict(dash='dot'),
-            opacity=0.5
-        ))
-
-        # Layout
-        fig.update_layout(
-            title="Cryptocurrency Price Forecast",
-            xaxis_title="Date",
-            yaxis_title="Price (USD)",
-            template="plotly_dark"
-        )
-
-        return fig.to_html()
-    except Exception as e:
-        logging.error(f"Error generating forecast plot: {e}")
-        return "Error generating forecast plot."
-
+        return f"Error generating crypto price chart: {e}"
 
 # Crypto News from Cryptopanic API
 def get_crypto_news(crypto_symbol, api_key, limit=5):
@@ -586,53 +457,35 @@ def crypto_analysis():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        crypto_symbol = request.form.get('crypto_symbol').upper()
+        crypto_symbol = request.form.get('crypto_symbol')
         if not crypto_symbol:
             return render_template('crypto_form.html', error="Please enter a cryptocurrency symbol.")
-        
+        crypto_symbol = crypto_symbol.upper()
+
         # Fetch news using CryptoPanic API
         api_key = os.getenv("CRYPTOPANIC_API_KEY")  # Store your CryptoPanic API key in environment variables
         news_items = get_crypto_news(crypto_symbol, api_key)
         crypto_data, narrative, ai_insight = get_crypto_data_with_insight(crypto_symbol)
         if not crypto_data:
             return render_template('crypto_result.html', error="No data found for the given cryptocurrency.")
-        
-        # Fetch price data from Binance
-        symbol = f"{crypto_symbol}USDT"  # Binance format for USD trading pairs
-        price_data = fetch_crypto_prices(symbol)
-        if price_data is None or price_data.empty:
-            return render_template('crypto_result.html', error="No data found for the given cryptocurrency.")
-        
-        # Perform analysis
-        latest_price = price_data["Close"].iloc[-1]
-        market_volume = price_data["Volume"].sum()  # Example: Summing volumes for analysis
-        crypto_analysis = analyze_market_data(crypto_data)
 
-        # Generate the price chart
+        crypto_analysis = analyze_market_data(crypto_data)
+        price_data = pd.DataFrame({
+            "Date": [pd.Timestamp.now()],
+            "Price (USD)": [crypto_data["quote"]["USD"]["price"]]
+        })
         price_chart = plot_crypto_price(price_data, crypto_symbol)
 
-        # Forecast future prices
-        forecast = forecast_crypto_prices(price_data)
-        if forecast is not None:
-            forecast_chart = plot_forecast(forecast, price_data)
-        else:
-            forecast_chart = "Forecasting error."
-
-        # Pass all required data to the template
-        crypto_info = {"name": crypto_symbol, "price": latest_price}
         return render_template(
             'crypto_result.html',
-            price_chart=price_chart,
-            crypto=crypto_info,
+            crypto=crypto_data,
             analysis=crypto_analysis,
-            forecast_chart=forecast_chart,
             narrative=narrative,
             insight=ai_insight,
+            price_chart=price_chart,
             news_items=news_items
         )
     return render_template('crypto_form.html')
-
-
 
 @app.route('/single', methods=['GET', 'POST'])
 def single_stock():
