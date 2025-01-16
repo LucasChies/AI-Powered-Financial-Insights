@@ -16,6 +16,7 @@ import plotly.graph_objects as go
 import io
 import base64
 import requests
+import pyodbc
 import plotly.graph_objects as go
 from prophet import Prophet
 from functools import lru_cache
@@ -744,4 +745,6 @@ def compare_stocks():
     return render_template('comparison_form.html')
 
 if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 8000))
+    app.run(host="0.0.0.0", port=port)
     app.run(debug=True)
